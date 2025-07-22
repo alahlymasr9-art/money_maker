@@ -1,0 +1,16 @@
+name: your_flutter_app
+description: A demo app to show background image and launch settings
+
+version: 1.0.0+1
+
+environment:
+  sdk: ">=2.17.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  audioplayers: ^5.2.0
+  android_intent_plus: ^4.0.0
+
+flutter:
+  uses-material-design: true

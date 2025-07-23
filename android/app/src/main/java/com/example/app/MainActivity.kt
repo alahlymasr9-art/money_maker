@@ -1,1 +1,0 @@
-// Placeholder content for app/src/main/java/com/example/app/MainActivity.kt

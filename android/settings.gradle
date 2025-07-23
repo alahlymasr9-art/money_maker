@@ -1,3 +1,0 @@
-﻿include ':app'
-
-rootProject.name = 'money_maker'

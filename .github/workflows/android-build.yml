@@ -20,7 +20,7 @@ jobs:
       - name: Create Flutter Android Project
         run: |
           flutter create -t app temp_flutter_app
-          cp -r lib pubspec.yaml assets temp_flutter_app/
+          cp -r lib pubspec.yaml temp_flutter_app/
           cd temp_flutter_app
           flutter pub get
 

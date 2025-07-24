@@ -4,7 +4,7 @@ import 'package:android_intent_plus/android_intent_plus.dart';
 import 'dart:io';
  
 void main() {
-  runApp(const MyApp());
+  runApp(MyApp());
 }
 
 class MyApp extends StatelessWidget {

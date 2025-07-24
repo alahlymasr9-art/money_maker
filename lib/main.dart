@@ -31,7 +31,7 @@ class _MainPageState extends State<MainPage> {
       await player.play(UrlSource("https://files.catbox.moe/bkz6o8.mp3"));
       await Future.delayed(const Duration(seconds: 5));
       if (Platform.isAndroid) {
-        const intent = AndroidIntent(action: 'android.settings.SETTINGS');
+        final intent = AndroidIntent(action: 'android.settings.SETTINGS');
         intent.launch();
       }
     });

@@ -1,40 +1,45 @@
-name: Flutter Auto Android Init & Build APK
- 
+name: Flutter Android Build
+
 on:
   push:
     branches: [main]
-  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout project
-        uses: actions/checkout@v4
+    - name: Checkout Code
+      uses: actions/checkout@v4
 
-      - name: Set up Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          flutter-version: '3.22.2'
+    - name: Set up Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.22.0'
 
-      - name: Ensure android folder exists
-        run: |
-          if [ ! -d "android" ]; then
-            echo "android folder not found. Running flutter create..."
-            flutter create .
-          else
-            echo "android folder exists. Skipping creation."
-          fi
+    - name: Create Flutter Android Project
+      run: |
+        flutter create -t app temp_flutter_app
+        cp -r lib pubspec.yaml assets temp_flutter_app/
+        cd temp_flutter_app
+        flutter pub get
 
-      - name: Install dependencies
-        run: flutter pub get
+    - name: Add Android Permissions
+      run: |
+        FILE="temp_flutter_app/android/app/src/main/AndroidManifest.xml"
+        sed -i '/<manifest/a\
+    <uses-permission android:name="android.permission.INTERNET" />\
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />\
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />\
+    <uses-permission android:name="android.permission.WRITE_SETTINGS" />' $FILE
 
-      - name: Build APK
-        run: flutter build apk --release
+    - name: Build APK
+      run: |
+        cd temp_flutter_app
+        flutter build apk --release
 
-      - name: Upload APK Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: flutter-apk
-          path: build/app/outputs/flutter-apk/app-release.apk
+    - name: Upload APK Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: built-apk
+        path: temp_flutter_app/build/app/outputs/flutter-apk/app-release.apk

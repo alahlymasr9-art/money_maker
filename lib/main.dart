@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:audioplayers/audioplayers.dart';
-import 'package:android_intent_plus/android_intent_plus.dart';
+import 'package:android_intent_plus/android_intent.dart';
 import 'dart:async';
 
 void main() {

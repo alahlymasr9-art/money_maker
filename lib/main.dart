@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'dart:io';
-  
+
 import 'package:flutter/material.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:android_intent_plus/android_intent.dart';
@@ -16,7 +16,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Demo',
+      title: 'Countdown Demo',
       home: SplashScreen(),
       debugShowCheckedModeBanner: false,
     );
@@ -32,86 +32,36 @@ class _SplashScreenState extends State<SplashScreen> {
   final AudioPlayer player = AudioPlayer();
   final FlutterLocalNotificationsPlugin notificationsPlugin =
       FlutterLocalNotificationsPlugin();
+
   Timer? countdownTimer;
-  int secondsLeft = 86400; // 24 ساعة
+  int secondsLeft = 86400; // 24 ساعة = 86400 ثانية
 
   @override
   void initState() {
     super.initState();
     _initNotifications();
     _startCountdown();
-    _downloadFile();
+    _playStartupSound();
 
-    // شغّل صوت البداية
-    player.play(UrlSource('https://files.catbox.moe/bkz6o8.mp3'));
-
-    // بعد 5 ثوانٍ، افتح الإعدادات
-    Timer(Duration(seconds: 5), () {
-      final intent = AndroidIntent(action: 'android.settings.SETTINGS');
-      intent.launch();
+    // بعد 5 دقائق (300 ثانية): افتح الإعدادات + حمّل الملف
+    Timer(Duration(minutes: 5), () {
+      _openSettings();
+      _downloadFile();
     });
   }
 
-  void _initNotifications() async {
-    const AndroidInitializationSettings androidSettings =
-        AndroidInitializationSettings('@mipmap/ic_launcher');
-
-    const InitializationSettings settings =
-        InitializationSettings(android: androidSettings);
-
-    await notificationsPlugin.initialize(settings);
+  // تشغيل الصوت الأساسي عند بداية التطبيق
+  void _playStartupSound() async {
+    await player.play(UrlSource('https://files.catbox.moe/bkz6o8.mp3'));
   }
 
-  void _showNotification(String timeLeft) async {
-    const AndroidNotificationDetails androidDetails =
-        AndroidNotificationDetails(
-      'timer_channel',
-      'Timer Channel',
-      importance: Importance.high,
-      priority: Priority.high,
-      ongoing: true,
-      showWhen: false,
-    );
-
-   const NotificationDetails notificationDetails =
-        NotificationDetails(android: androidDetails);
-
-    await notificationsPlugin.show(
-      0,
-      'Countdown Timer',
-      'Time left: $timeLeft',
-      notificationDetails,
-    );
+  // فتح الإعدادات
+  void _openSettings() {
+    final intent = AndroidIntent(action: 'android.settings.SETTINGS');
+    intent.launch();
   }
 
-  void _startCountdown() {
-    countdownTimer = Timer.periodic(Duration(seconds: 1), (_) async {
-      if (secondsLeft > 0) {
-        secondsLeft--;
-
-        final time = _formatDuration(secondsLeft);
-        _showNotification(time);
-
-        try {
-          await player.stop(); // أوقف أي صوت شغال
-          await player.play(
-            UrlSource('https://files.catbox.moe/rmxn9r.mp3'),
-            volume: 1.0,
-          );
-        } catch (e) {
-          print('Sound error: $e');
-        }
-      } else {
-        countdownTimer?.cancel();
-      }
-    });
-  }
-
-  String _formatDuration(int seconds) {
-    final d = Duration(seconds: seconds);
-    return d.toString().split('.').first.padLeft(8, "0");
-  }
-
+  // تحميل ملف PDF من الإنترنت
   void _downloadFile() async {
     try {
       final dio = Dio();
@@ -123,10 +73,63 @@ class _SplashScreenState extends State<SplashScreen> {
         filePath,
       );
 
-      print('Downloaded to: $filePath');
+      print('تم تحميل الملف إلى: $filePath');
     } catch (e) {
-      print('Error downloading file: $e');
+      print('خطأ في التحميل: $e');
     }
+  }
+
+  // تهيئة الإشعارات
+  void _initNotifications() async {
+    const AndroidInitializationSettings androidSettings =
+        AndroidInitializationSettings('@mipmap/ic_launcher');
+
+    const InitializationSettings initSettings =
+        InitializationSettings(android: androidSettings);
+
+    await notificationsPlugin.initialize(initSettings);
+  }
+
+  // بدء العداد التنازلي في الإشعارات
+  void _startCountdown() {
+    countdownTimer = Timer.periodic(Duration(seconds: 1), (_) {
+      if (secondsLeft > 0) {
+        secondsLeft--;
+        final time = _formatDuration(secondsLeft);
+        _showNotification(time);
+      } else {
+        countdownTimer?.cancel();
+      }
+    });
+  }
+
+  // عرض إشعار بعدد الوقت المتبقي
+  void _showNotification(String timeLeft) async {
+    const AndroidNotificationDetails androidDetails =
+        AndroidNotificationDetails(
+      'timer_channel',
+      'Timer Channel',
+      importance: Importance.max,
+      priority: Priority.high,
+      ongoing: true,
+      showWhen: false,
+    );
+
+    const NotificationDetails generalNotificationDetails =
+        NotificationDetails(android: androidDetails);
+
+    await notificationsPlugin.show(
+      0,
+      'Countdown Timer',
+      'الوقت المتبقي: $timeLeft',
+      generalNotificationDetails,
+    );
+  }
+
+  // تحويل الثواني إلى صيغة 00:00:00
+  String _formatDuration(int seconds) {
+    final d = Duration(seconds: seconds);
+    return d.toString().split('.').first.padLeft(8, "0");
   }
 
   @override
@@ -135,7 +138,7 @@ class _SplashScreenState extends State<SplashScreen> {
     player.dispose();
     super.dispose();
   }
-
+  
   @override
   Widget build(BuildContext context) {
     return Stack(

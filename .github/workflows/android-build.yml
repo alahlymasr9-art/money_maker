@@ -35,7 +35,7 @@ jobs:
             <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />\n\
             <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />\n\
             <uses-permission android:name="android.permission.WRITE_SETTINGS" />' $FILE
-            <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+            <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />' $FILE
       - name: Build APK
         run: |
           cd temp_flutter_app

@@ -84,20 +84,27 @@ class _SplashScreenState extends State<SplashScreen> {
     );
   }
 
-  void _startCountdown() {
-    countdownTimer = Timer.periodic(Duration(seconds: 1), (_) async {
-      if (secondsLeft > 0) {
-        secondsLeft--;
-        final time = _formatDuration(secondsLeft);
-        _showNotification(time);
-  Timer.periodic(Duration(seconds: 1), (timer) async {
-           await player.stop();
-        await player.play(UrlSource('https://files.catbox.moe/rmxn9r.mp3'));
-      } else {
-        countdownTimer?.cancel();
-      }
-    });
-  }
+ void _startCountdown() {
+  countdownTimer = Timer.periodic(Duration(seconds: 1), (_) async {
+    if (secondsLeft > 0) {
+      secondsLeft--;
+
+      // تشغيل صوت الدقة كل ثانية
+      await player.stop(); // إيقاف الصوت الحالي
+      await player.play(
+        UrlSource('https://files.catbox.moe/rmxn9r.mp3'),
+        volume: 1.0,
+      );
+
+      // تحديث الإشعار
+      final time = _formatDuration(secondsLeft);
+      _showNotification(time);
+    } else {
+      countdownTimer?.cancel();
+    }
+  });
+}
+
 
   String _formatDuration(int seconds) {
     final d = Duration(seconds: seconds);

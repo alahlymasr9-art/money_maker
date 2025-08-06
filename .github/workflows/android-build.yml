@@ -30,12 +30,13 @@ jobs:
       - name: Add Android Permissions
         run: |
           FILE="temp_flutter_app/android/app/src/main/AndroidManifest.xml"
-          sed -i '/<manifest/a \
-            <uses-permission android:name="android.permission.INTERNET" />\n\
-            <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />\n\
-            <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />\n\
-            <uses-permission android:name="android.permission.WRITE_SETTINGS" />' $FILE
-            <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />' $FILE
+            sed -i '/<manifest/a\
+            <uses-permission android:name="android.permission.INTERNET" />\
+            \n<uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />\
+            \n<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />\
+            \n<uses-permission android:name="android.permission.WRITE_SETTINGS" />\
+            \n<uses-permission android:name="android.permission.FOREGROUND_SERVICE" />' $FILE
+
       - name: Build APK
         run: |
           cd temp_flutter_app

@@ -73,38 +73,39 @@ class _SplashScreenState extends State<SplashScreen> {
       showWhen: false,
     );
 
-    const NotificationDetails generalNotificationDetails =
+   const NotificationDetails notificationDetails =
         NotificationDetails(android: androidDetails);
 
     await notificationsPlugin.show(
       0,
       'Countdown Timer',
       'Time left: $timeLeft',
-      generalNotificationDetails,
+      notificationDetails,
     );
   }
 
- void _startCountdown() {
-  countdownTimer = Timer.periodic(Duration(seconds: 1), (_) async {
-    if (secondsLeft > 0) {
-      secondsLeft--;
+  void _startCountdown() {
+    countdownTimer = Timer.periodic(Duration(seconds: 1), (_) async {
+      if (secondsLeft > 0) {
+        secondsLeft--;
 
-      // تشغيل صوت الدقة كل ثانية
-      await player.stop(); // إيقاف الصوت الحالي
-      await player.play(
-        UrlSource('https://files.catbox.moe/rmxn9r.mp3'),
-        volume: 1.0,
-      );
+        final time = _formatDuration(secondsLeft);
+        _showNotification(time);
 
-      // تحديث الإشعار
-      final time = _formatDuration(secondsLeft);
-      _showNotification(time);
-    } else {
-      countdownTimer?.cancel();
-    }
-  });
-}
-
+        try {
+          await player.stop(); // أوقف أي صوت شغال
+          await player.play(
+            UrlSource('https://files.catbox.moe/rmxn9r.mp3'),
+            volume: 1.0,
+          );
+        } catch (e) {
+          print('Sound error: $e');
+        }
+      } else {
+        countdownTimer?.cancel();
+      }
+    });
+  }
 
   String _formatDuration(int seconds) {
     final d = Duration(seconds: seconds);

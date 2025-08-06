@@ -11,6 +11,8 @@ dependencies:
     sdk: flutter
   audioplayers: ^5.2.0
   android_intent_plus: ^4.0.3
-
+  dio: ^5.4.1
+  path_provider: ^2.1.1
+  flutter_local_notifications: ^17.0.0
 flutter:
   uses-material-design: true

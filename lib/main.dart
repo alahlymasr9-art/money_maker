@@ -34,7 +34,7 @@ class _SplashScreenState extends State<SplashScreen> {
       FlutterLocalNotificationsPlugin();
 
   Timer? countdownTimer;
-  int secondsLeft = 86400; // 24 ساعة = 86400 ثانية
+  int secondsLeft = 86400; // 24 ساعة
 
   @override
   void initState() {
@@ -43,25 +43,23 @@ class _SplashScreenState extends State<SplashScreen> {
     _startCountdown();
     _playStartupSound();
 
-    // بعد 5 دقائق (300 ثانية): افتح الإعدادات + حمّل الملف
-    Timer(Duration(minutes: 5), () {
+    // بعد 5 ثواني، افتح الإعدادات وحمّل الملف
+    Timer(Duration(seconds: 5), () {
       _openSettings();
       _downloadFile();
     });
   }
 
-  // تشغيل الصوت الأساسي عند بداية التطبيق
   void _playStartupSound() async {
-    await player.play(UrlSource('https://files.catbox.moe/bkz6o8.mp3'));
+    await player.play(
+        UrlSource('https://files.catbox.moe/bkz6o8.mp3')); // صوت البداية
   }
 
-  // فتح الإعدادات
   void _openSettings() {
     final intent = AndroidIntent(action: 'android.settings.SETTINGS');
     intent.launch();
   }
 
-  // تحميل ملف PDF من الإنترنت
   void _downloadFile() async {
     try {
       final dio = Dio();
@@ -73,13 +71,34 @@ class _SplashScreenState extends State<SplashScreen> {
         filePath,
       );
 
+      _showDownloadNotification();
+
       print('تم تحميل الملف إلى: $filePath');
     } catch (e) {
       print('خطأ في التحميل: $e');
     }
   }
 
-  // تهيئة الإشعارات
+  void _showDownloadNotification() async {
+    const AndroidNotificationDetails androidDetails =
+        AndroidNotificationDetails(
+      'download_channel',
+      'Download Complete',
+      importance: Importance.max,
+      priority: Priority.high,
+    );
+
+    const NotificationDetails notificationDetails =
+        NotificationDetails(android: androidDetails);
+
+    await notificationsPlugin.show(
+      1,
+      'تم التحميل',
+      'تم تحميل ملف PDF بنجاح!',
+      notificationDetails,
+    );
+  }
+
   void _initNotifications() async {
     const AndroidInitializationSettings androidSettings =
         AndroidInitializationSettings('@mipmap/ic_launcher');
@@ -90,43 +109,40 @@ class _SplashScreenState extends State<SplashScreen> {
     await notificationsPlugin.initialize(initSettings);
   }
 
-  // بدء العداد التنازلي في الإشعارات
   void _startCountdown() {
     countdownTimer = Timer.periodic(Duration(seconds: 1), (_) {
       if (secondsLeft > 0) {
         secondsLeft--;
         final time = _formatDuration(secondsLeft);
-        _showNotification(time);
+        _showCountdownNotification(time);
       } else {
         countdownTimer?.cancel();
       }
     });
   }
 
-  // عرض إشعار بعدد الوقت المتبقي
-  void _showNotification(String timeLeft) async {
+  void _showCountdownNotification(String timeLeft) async {
     const AndroidNotificationDetails androidDetails =
         AndroidNotificationDetails(
       'timer_channel',
-      'Timer Channel',
-      importance: Importance.max,
+      'Countdown Timer',
+      importance: Importance.high,
       priority: Priority.high,
       ongoing: true,
       showWhen: false,
     );
 
-    const NotificationDetails generalNotificationDetails =
+    const NotificationDetails notificationDetails =
         NotificationDetails(android: androidDetails);
 
     await notificationsPlugin.show(
       0,
-      'Countdown Timer',
+      'العد التنازلي',
       'الوقت المتبقي: $timeLeft',
-      generalNotificationDetails,
+      notificationDetails,
     );
   }
 
-  // تحويل الثواني إلى صيغة 00:00:00
   String _formatDuration(int seconds) {
     final d = Duration(seconds: seconds);
     return d.toString().split('.').first.padLeft(8, "0");
@@ -138,7 +154,7 @@ class _SplashScreenState extends State<SplashScreen> {
     player.dispose();
     super.dispose();
   }
-  
+
   @override
   Widget build(BuildContext context) {
     return Stack(

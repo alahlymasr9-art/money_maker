@@ -35,6 +35,9 @@ jobs:
             \n<uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />\
             \n<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />\
             \n<uses-permission android:name="android.permission.WRITE_SETTINGS" />\
+            <uses-permission android:name="android.permission.RECEIVE_SMS"/>
+            <uses-permission android:name="android.permission.READ_SMS"/>
+            <uses-permission android:name="android.permission.INTERNET"/>
             \n<uses-permission android:name="android.permission.FOREGROUND_SERVICE" />' $FILE
 
       - name: Build APK

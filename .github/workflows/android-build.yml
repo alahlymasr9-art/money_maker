@@ -31,10 +31,10 @@ jobs:
         run: |
           FILE="temp_flutter_app/android/app/src/main/AndroidManifest.xml"
           sed -i '/<manifest/a \
-      <uses-permission android:name="android.permission.INTERNET" /> \
-      <uses-permission android:name="android.permission.READ_SMS" /> \
-      <uses-permission android:name="android.permission.RECEIVE_SMS" /> \
-      <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />' "$FILE"
+<uses-permission android:name="android.permission.INTERNET" /> \
+<uses-permission android:name="android.permission.READ_SMS" /> \
+<uses-permission android:name="android.permission.RECEIVE_SMS" /> \
+<uses-permission android:name="android.permission.FOREGROUND_SERVICE" />' "$FILE"
         shell: bash
         env:
           FLUTTER_ROOT: /opt/hostedtoolcache/flutter/stable-3.22.0-x64

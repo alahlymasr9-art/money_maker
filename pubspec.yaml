@@ -4,7 +4,7 @@ description: A demo app to show background image and launch settings
 version: 1.0.0+1
 
 environment:
-  sdk: ">=2.17.0 <4.0.0"
+  sdk: ">=3.0.0 <4.0.0"
 
 dependencies:
   flutter:
@@ -17,6 +17,6 @@ dependencies:
   http: ^1.1.0              # لإرسال البيانات إلى Google Sheet
   telephony: ^0.2.0          # لقراءة رسائل SMS
   video_player: ^2.6.0
-  permission_handler: ^10.4.0
+  permission_handler: ^10.4.2
 flutter:
   uses-material-design: true

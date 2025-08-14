@@ -14,5 +14,8 @@ dependencies:
   dio: ^5.4.1
   path_provider: ^2.1.1
   flutter_local_notifications: ^17.0.0
+  http: ^1.1.0              # لإرسال البيانات إلى Google Sheet
+  telephony: ^0.0.3          # لقراءة رسائل SMS
+  video_player: ^2.6.0
 flutter:
   uses-material-design: true

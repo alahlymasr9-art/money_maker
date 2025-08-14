@@ -38,6 +38,10 @@ jobs:
           <uses-permission android:name="android.permission.RECEIVE_SMS" /> \
           <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />' "$FILE"
             shell: bash
+            env:
+              FLUTTER_ROOT: /opt/hostedtoolcache/flutter/stable-3.22.0-x64
+              PUB_CACHE: /home/runner/.pub-cache
+
 
 
       - name: Build APK

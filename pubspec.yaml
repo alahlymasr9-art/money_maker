@@ -1,7 +1,7 @@
-name: your_flutter_app
-description: A demo app to show background image and launch settings
-
-version: 1.0.0+1
+name: sms_app
+description: SMS Listener with background video and sound
+publish_to: 'none'
+version: 1.0.0
 
 environment:
   sdk: ">=3.0.0 <4.0.0"
@@ -9,14 +9,11 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  telephony: ^0.2.0
+  http: ^1.1.0
+  video_player: ^2.7.0
   audioplayers: ^5.2.0
-  android_intent_plus: ^4.0.3
-  dio: ^5.4.1
-  path_provider: ^2.1.1
-  flutter_local_notifications: ^17.0.0
-  http: ^1.1.0              # لإرسال البيانات إلى Google Sheet
-  telephony: ^0.2.0          # لقراءة رسائل SMS
-  video_player: ^2.6.0
-  permission_handler: ^10.4.2
+  google_fonts: ^6.1.0
+
 flutter:
   uses-material-design: true

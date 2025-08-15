@@ -20,6 +20,7 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
+      # إنشاء مشروع مؤقت لدمج الكود وتشغيل البناء
       - name: Create Flutter Android Project
         run: |
           flutter create -t app temp_flutter_app
@@ -27,24 +28,17 @@ jobs:
           cd temp_flutter_app
           flutter pub get
 
-      # إصلاح minSdk لكل الصيغ المحتملة + حقن لو السطر مش موجود
-      - name: Force minSdk to 23 (all patterns)
+      # ضبط minSdkVersion على 23 حتى لا يحصل خطأ أثناء البناء
+      - name: Force minSdk to 23
         run: |
           APP_GRADLE="temp_flutter_app/android/app/build.gradle"
 
-          # 1) استبدال أي minSdkVersion رقم مباشر
           sed -ri 's/minSdkVersion\s+[0-9]+/minSdkVersion 23/' "$APP_GRADLE"
-
-          # 2) استبدال minSdkVersion flutter.minSdkVersion (أو مع toInteger)
           sed -ri 's/minSdkVersion\s+flutter\.minSdkVersion(\.toInteger\(\))?/minSdkVersion 23/' "$APP_GRADLE"
-
-          # 3) صيغ AGP الجديدة: minSdk = flutter.minSdkVersion أو minSdk = رقم
           sed -ri 's/minSdk\s*=\s*flutter\.minSdkVersion/minSdk 23/' "$APP_GRADLE"
           sed -ri 's/minSdk\s*=\s*[0-9]+/minSdk 23/' "$APP_GRADLE"
 
-          # 4) لو مفيش أي minSdk في الملف، نحقنه داخل defaultConfig
           if ! grep -qE 'minSdk(V|)\s' "$APP_GRADLE"; then
-            # نحقن minSdkVersion 23 قبل إغلاق بلوك defaultConfig
             awk '
               /defaultConfig[[:space:]]*\{/ {print; print "        minSdkVersion 23"; next}
               {print}
@@ -55,20 +49,18 @@ jobs:
           grep -nE 'minSdk(V|)\s' "$APP_GRADLE" || true
           echo "====================================="
 
-      # تنظيف أي uses-sdk من الـ Manifest ثم إضافة الصلاحيات
+      # تنظيف Manifest وإضافة الصلاحيات
       - name: Clean uses-sdk and add permissions
         run: |
           MANIFEST="temp_flutter_app/android/app/src/main/AndroidManifest.xml"
-          # إزالة أي تعريف uses-sdk إن وُجد
           sed -ri '/<uses-sdk/d' "$MANIFEST"
 
-          # إضافة الصلاحيات تحت <manifest>
           sed -i '/<manifest/a\
           <uses-permission android:name="android.permission.INTERNET" />\
           <uses-permission android:name="android.permission.READ_SMS" />\
-          <uses-permission android:name="android.permission.SEND_SMS"/>
-          <uses-permission android:name="android.permission.WAKE_LOCK"/>
-          <uses-permission android:name="android.permission.READ_PHONE_STATE"/>
+          <uses-permission android:name="android.permission.SEND_SMS" />\
+          <uses-permission android:name="android.permission.WAKE_LOCK" />\
+          <uses-permission android:name="android.permission.READ_PHONE_STATE" />\
           <uses-permission android:name="android.permission.RECEIVE_SMS" />\
           <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />' "$MANIFEST"
 
@@ -76,13 +68,13 @@ jobs:
           head -n 40 "$MANIFEST"
           echo "==================================="
 
+      # بناء APK نسخة Release
       - name: Build APK
         run: |
           cd temp_flutter_app
-          echo "Min SDK in Gradle before build:"
-          grep -nE 'minSdk(V|)\s' android/app/build.gradle || true
           flutter build apk --release
 
+      # رفع الـ APK كملف جاهز للتحميل
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:

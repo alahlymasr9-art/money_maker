@@ -27,13 +27,16 @@ jobs:
           cd temp_flutter_app
           flutter pub get
 
-      - name: Update minSdkVersion to 23
+      - name: Force minSdkVersion to 23
         run: |
           FILE="temp_flutter_app/android/app/build.gradle"
-          # استخدام regex يطابق أي صيغة للسطر
-          sed -i 's/minSdkVersion[[:space:]]*[0-9]\+/minSdkVersion 23/' "$FILE"
-          echo "Updated minSdkVersion:"
-          grep minSdkVersion "$FILE"
+          if grep -q "minSdkVersion" "$FILE"; then
+            sed -i 's/minSdkVersion[[:space:]]*[0-9]\+/minSdkVersion 23/' "$FILE"
+          else
+            sed -i '/defaultConfig {/a\        minSdkVersion 23' "$FILE"
+          fi
+          echo "==== build.gradle after update ===="
+          cat "$FILE"
 
       - name: Add Android Permissions
         run: |
@@ -47,6 +50,7 @@ jobs:
       - name: Build APK
         run: |
           cd temp_flutter_app
+          grep minSdkVersion android/app/build.gradle
           flutter build apk --release
 
       - name: Upload APK Artifact

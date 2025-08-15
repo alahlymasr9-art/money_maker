@@ -27,17 +27,19 @@ jobs:
           cd temp_flutter_app
           flutter pub get
 
+      - name: Update minSdkVersion to 23
+        run: |
+          FILE="temp_flutter_app/android/app/build.gradle"
+          sed -i 's/minSdkVersion [0-9]\+/minSdkVersion 23/' "$FILE"
+
       - name: Add Android Permissions
         run: |
           FILE="temp_flutter_app/android/app/src/main/AndroidManifest.xml"
-          sed -i '/<manifest/a <uses-permission android:name="android.permission.INTERNET" /> \
-          <uses-permission android:name="android.permission.READ_SMS" /> \
-          <uses-permission android:name="android.permission.RECEIVE_SMS" /> \
-          <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />' "$FILE"
-        shell: bash
-        env:
-          FLUTTER_ROOT: /opt/hostedtoolcache/flutter/stable-3.22.0-x64
-          PUB_CACHE: /home/runner/.pub-cache
+          sed -i '/<manifest/a\
+    <uses-permission android:name="android.permission.INTERNET" />\
+    <uses-permission android:name="android.permission.READ_SMS" />\
+    <uses-permission android:name="android.permission.RECEIVE_SMS" />\
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />' "$FILE"
 
       - name: Build APK
         run: |
